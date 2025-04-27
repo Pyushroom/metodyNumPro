@@ -31,6 +31,7 @@ def lagrange_interpolation(x_vals, y_vals, x):
         total += term
     return total
 
+# b) interpolację funkcjami sklejanymi trzeciego stopnia
 def third_degree_spline_interpolation(x_vals, y_vals, x):
     n = len(x_vals)
     h = np.diff(x_vals)
@@ -92,7 +93,7 @@ M_spline = lambda x: third_degree_spline_interpolation(UL1_vals, Mj_vals, x)
 M_poly_deg3 = lambda x: evaluate_polynomial(coeffs_deg3, x)
 M_poly_deg5 = lambda x: evaluate_polynomial(coeffs_deg5, x)
 
- #Interpolacja b) funkcjami sklejanymi (naturalne brzegi)
+#Interpolacja b) funkcjami sklejanymi 
 #M_spline = CubicSpline(UL1_vals, Mj_vals, bc_type='natural', extrapolate=True)
 
 # Wybór używanej funkcji do interpolacji M(uL1)
@@ -107,6 +108,7 @@ def e2(t): return 240 * np.sin(t)
 def e3(t, f=5): return 210 * np.sin(2 * np.pi * f * t)
 def e4(t, f=50): return 120 * np.sin(2 * np.pi * f * t)
 
+#schemat
 def f_nonlinear(t, y, e_func, prev_y1, dt):
     y1, y2, y3 = y
 
@@ -115,7 +117,7 @@ def f_nonlinear(t, y, e_func, prev_y1, dt):
     uL1 = L1 * di1_dt
 
     # Obliczanie nieliniowej indukcyjności wzajemnej
-    M = float(M_interp(np.abs(uL1)))  # bezwzględna wartość napięcia (lub użyj uL1 jeśli może być ujemne)
+    M = float(M_interp(np.abs(uL1)))  # bezwzględna wartość napięcia 
 
     # Obliczanie D1 i D2 dla bieżącej wartości M
     D1 = (L1 / M) - (M / L2)
@@ -192,78 +194,88 @@ def zlozona_metoda_prostokatow(fx, dt):
 
 def metoda_simpsona(fx, dt):
     if len(fx) % 2 == 0:
-        fx = fx[:-1]  # musi być nieparzysta liczba próbek
+        fx = fx[:-1]  
     n = len(fx)
     h = dt
     return h/3 * (fx[0] + 4 * np.sum(fx[1:n-1:2]) + 2 * np.sum(fx[2:n-2:2]) + fx[n-1])
 
-# OBLICZENIA MOCY I DODATKOWE WYKRESY
+# Wyniki
 results = []
 
-# Tworzymy katalog na wykresy
+# folder dla wykresów
 output_dir = "wykresy"
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
+# Przechodzimy przez różne funkcje wymuszenia (e_funcs), metody numeryczne (methods)
+# oraz różne kroki czasowe (time_steps) w celu obliczeń i generowania wykresów
 for e_func in e_funcs:
     for method in methods:
         for label_dt, dt in time_steps:
+            
+            # Wybór odpowiedniej metody numerycznej
             if method == 'Euler':
                 t, y = euler_method_nonlinear(f_nonlinear, y0, t_span, e_func, dt)
             elif method == 'Improved Euler':
                 t, y = improved_euler_method_nonlinear(f_nonlinear, y0, t_span, e_func, dt)
 
+            # Rozdzielnie wynikowej macierzy
             i1 = y[:, 0]
             i2 = y[:, 1]
 
+            # Obliczanie mocy chwilowej w obwodach R1 i R2
             P1 = moc_R1(i1)
             P2 = moc_R2(i2)
 
+            # Obliczanie energii (integracji mocy) za pomocą metody prostokątów
             energia_P1_rect = zlozona_metoda_prostokatow(P1, dt)
             energia_P2_rect = zlozona_metoda_prostokatow(P2, dt)
 
+            # Obliczanie energii (integracji mocy) za pomocą metody parabol
             energia_P1_simpson = metoda_simpsona(P1, dt)
             energia_P2_simpson = metoda_simpsona(P2, dt)
 
+            # Sumaryczna energia
+            energia_sumaryczna_rect = energia_P1_rect + energia_P2_rect
+            energia_sumaryczna_simpson = energia_P1_simpson + energia_P2_simpson
+
+            # Dodawanie do wyników
             results.append([ 
-                interp_name, 
-                method, 
-                e_func.__name__, 
-                dt, 
-                round(energia_P1_rect, 4), 
-                round(energia_P2_rect, 4), 
-                round(energia_P1_simpson, 4), 
-                round(energia_P2_simpson, 4)
+                interp_name,  
+                method,       
+                e_func.__name__,  
+                dt,           
+                round(energia_sumaryczna_rect, 4),  # Sumaryczna energia z metody prostokątów
+                round(energia_sumaryczna_simpson, 4)  # Sumaryczna energia z metody Simpsona
             ])
 
             # Tworzenie wykresu
             plt.figure(figsize=(10, 6))
 
             # Wykres prądów i1 oraz i2
-            plt.subplot(2, 1, 1)  # Pierwszy wykres (prądy)
-            plt.plot(t, i1, label='i1(t)', color='blue')
-            plt.plot(t, i2, label='i2(t)', color='green')
-            plt.ylabel('Prąd [A]')
-            plt.title(f'Prądy i1(t) i i2(t) ({method}, e={e_func.__name__}, {label_dt})')
-            plt.grid(True)
-            plt.legend()
+            plt.subplot(2, 1, 1)  
+            plt.plot(t, i1, label='i1(t)', color='blue')  
+            plt.plot(t, i2, label='i2(t)', color='green')  
+            plt.ylabel('Prąd [A]')  
+            plt.title(f'Prądy i1(t) i i2(t) ({method}, e={e_func.__name__}, {label_dt})')  
+            plt.grid(True)  
+            plt.legend()  
 
-            # Wykres mocy
-            plt.subplot(2, 1, 2)  # Drugi wykres (moc)
-            plt.plot(t, P1, label='P_R1(t)', color='orange')
-            plt.plot(t, P2, label='P_R2(t)', color='purple')
-            plt.xlabel('Czas [s]')
-            plt.ylabel('Moc chwilowa [W]')
-            plt.title(f'Moc chwilowa P(t) w R1 i R2 ({method}, e={e_func.__name__}, {label_dt})')
-            plt.grid(True)
-            plt.legend()
+            # Wykres mocy chwilowej
+            plt.subplot(2, 1, 2)  
+            plt.plot(t, P1, label='P_R1(t)', color='orange')  
+            plt.plot(t, P2, label='P_R2(t)', color='purple')  
+            plt.xlabel('Czas [s]')  
+            plt.ylabel('Moc chwilowa [W]')  
+            plt.title(f'Moc chwilowa P(t) w R1 i R2 ({method}, e={e_func.__name__}, {label_dt})')  
+            plt.grid(True)  
+            plt.legend()  
 
-            plt.tight_layout()
-            filename = f'{output_dir}/moc_i_prad_{interp_name}_{method}_{e_func.__name__}_{label_dt}.png'
-            plt.savefig(filename, dpi=300)
-            #plt.show()
+            plt.tight_layout()  
+            filename = f'{output_dir}/moc_i_prad_{interp_name}_{method}_{e_func.__name__}_{label_dt}.png'  # Nazwa pliku
+            plt.savefig(filename, dpi=300)  
+            #plt.show()  
 
-# WYPISANIE TABELI
-headers = ["Interpolacja", "Metoda", "Wymuszenie", "Δt", "R1_Rect", "R2_Rect", "R1_Simpson", "R2_Simpson"]
+# Wyniki w formie tabeli
+headers = ["Interpolacja", "Metoda", "Wymuszenie", "Δt", "Sumaryczna Energia Prostokąty", "Sumaryczna Energia Simpson"]
 print("\n" + tabulate(results, headers=headers, tablefmt="grid"))
-

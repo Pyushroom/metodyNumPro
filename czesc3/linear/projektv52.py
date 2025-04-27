@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import simpson
 import os
-from tabulate import tabulate  # Importowanie tabulate
+from tabulate import tabulate  # do tabel
 
 # Parametry obwodu
 R1, R2 = 0.1, 10.0
@@ -32,7 +32,7 @@ def f(t, y, e_func):
     B = np.array([1 / (M * D1), 1 / (L1 * D2), 0])
     return A @ y + B * e_func(t)
 
-# Euler i poprawiona metoda Eulera
+# metoda Eulera
 def euler_method(f, y0, t_span, e_func, dt):
     t = np.arange(t_span[0], t_span[1] + dt, dt)
     y = np.zeros((len(t), len(y0)))
@@ -40,7 +40,7 @@ def euler_method(f, y0, t_span, e_func, dt):
     for i in range(1, len(t)):
         y[i] = y[i-1] + dt * f(t[i-1], y[i-1], e_func)
     return t, y
-
+# poprawiona metoda Eulera
 def improved_euler_method(f, y0, t_span, e_func, dt):
     t = np.arange(t_span[0], t_span[1] + dt, dt)
     y = np.zeros((len(t), len(y0)))
@@ -66,12 +66,12 @@ y0 = [0, 0, 0]
 # Wyniki
 results = []
 
-# Tworzymy katalog na wykresy
+# Zapis wykrersów w jednym folderze 
 output_dir = "wykresy"
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
-# Tworzymy wykresy i zapisujemy wyniki do listy
+# Wykresy i wyniki
 for e_name, e_func in e_funcs:
     for dt in [dt_short, dt_long]:
         t, y = improved_euler_method(f, y0, t_span, e_func, dt)
@@ -79,12 +79,12 @@ for e_name, e_func in e_funcs:
         
         # Moc (średnia moc w czasie)
         P_rect = np.sum(power) * (t[1] - t[0])  # Prostokąty
-        P_simpson = simpson(power, t)  # Simpson
+        P_simpson = simpson(power, t)  # parabole
 
-        # Dodajemy wyniki do listy
+        # dodawanie do listy wyników do tabeli
         results.append([e_name, dt, round(P_rect, 6), round(P_simpson, 6)])
 
-        # Rysowanie wykresów
+        # Wykresy
         plt.figure(figsize=(10, 6))
 
         # Wykresy prądów
@@ -106,10 +106,10 @@ for e_name, e_func in e_funcs:
 
         plt.tight_layout()
 
-        # Zapisz wykres do pliku PNG
+        # Zapis wykresów
         filename = f"{output_dir}/{e_name}_dt={dt}.png"
         plt.savefig(filename)
-        plt.close()  # Zamknięcie wykresu po zapisaniu
+        plt.close()  
 
 # Wyświetlanie tabeli z wynikami
 headers = ["Wymuszenie", "dt", "Prostokąty [W]", "Simpson [W]"]

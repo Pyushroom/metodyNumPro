@@ -73,7 +73,7 @@ def improved_euler_method(f, y0, t_span, e_func, dt):
     return t, y
 
 # Parametry symulacji
-y0 = [0, 0, 0]  # Warunki początkowe: i1(0)=0, i2(0)=0, uC(0)=0
+y0 = [0, 0, 0]  # Warunki początkowe
 t_span = (0, 30)  # Zakres czasu
 dt = 0.01  # Krok czasowy
 
@@ -97,8 +97,6 @@ for e_func in e_funcs:
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
-
-        # Zapisz wykres 1 jako PNG
         plt.savefig(f'napiecie_na_kondensatorze_{method}_{e_func.__name__}.png', dpi=300)
 
         # Wykres 2: Prąd i1(t) i i2(t) vs t
@@ -111,8 +109,6 @@ for e_func in e_funcs:
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
-
-        # Zapisz wykres 2 jako PNG
         plt.savefig(f'prady_i1_i_i2_{method}_{e_func.__name__}.png', dpi=300)
 
         # Pokaż wykresy

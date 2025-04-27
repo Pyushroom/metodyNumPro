@@ -28,6 +28,7 @@ def lagrange_interpolation(x_vals, y_vals, x):
         total += term
     return total
 
+# b) interpolację funkcjami sklejanymi trzeciego stopnia
 def third_degree_spline_interpolation(x_vals, y_vals, x):
     n = len(x_vals)
     h = np.diff(x_vals)
@@ -89,12 +90,10 @@ M_spline = lambda x: third_degree_spline_interpolation(UL1_vals, Mj_vals, x)
 M_poly_deg3 = lambda x: evaluate_polynomial(coeffs_deg3, x)
 M_poly_deg5 = lambda x: evaluate_polynomial(coeffs_deg5, x)
 
- #Interpolacja b) funkcjami sklejanymi (naturalne brzegi)
-#M_spline = CubicSpline(UL1_vals, Mj_vals, bc_type='natural', extrapolate=True)
 
 # Wybór używanej funkcji do interpolacji M(uL1)
-M_interp = M_poly_deg5  # testowanie metod
-interp_name = "a5" 
+M_interp = M_spline  # testowanie metod
+interp_name = "interpolacja sklejenie" 
 
 
 # Wymuszenia
@@ -111,7 +110,7 @@ def f_nonlinear(t, y, e_func, prev_y1, dt):
     uL1 = L1 * di1_dt
 
     # Obliczanie nieliniowej indukcyjności wzajemnej
-    M = float(M_interp(np.abs(uL1)))  # bezwzględna wartość napięcia (lub użyj uL1 jeśli może być ujemne)
+    M = float(M_interp(np.abs(uL1)))  # bezwzględna wartość napięcia
 
     # Obliczanie D1 i D2 dla bieżącej wartości M
     D1 = (L1 / M) - (M / L2)
@@ -168,7 +167,8 @@ dt = 0.01  # Krok czasowy
 
 # Wybór metody i wymuszenia
 methods = ['Euler', 'Improved Euler']
-e_funcs = [e1, e2, e3, e4]
+#e_funcs = [e1, e2, e3, e4]
+e_funcs = [e2, e4] #dwie funkce e(t) do wykresów
 
 for e_func in e_funcs:
     for method in methods:
@@ -177,17 +177,18 @@ for e_func in e_funcs:
         elif method == 'Improved Euler':
             t, y = improved_euler_method_nonlinear(f_nonlinear, y0, t_span, e_func, dt)
 
+        # Obliczanie napięcia na rezystorze R2
+        uR2 = R2 * y[:, 1]  
+
         # Wykres 1: Napięcie na kondensatorze Uc(t) vs t
         plt.figure(figsize=(10, 6))
         plt.plot(t, y[:, 2], label='uC(t) [V]', color='blue')
         plt.xlabel('Czas [s]')
         plt.ylabel('Napięcie na kondensatorze [V]')
-        plt.title(f'Napięcie na kondensatorze Uc(t) vs t ({method}, e(t)={e_func.__name__}, )')
+        plt.title(f'Napięcie na kondensatorze Uc(t) vs t ({method}, e(t)={e_func.__name__})')
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
-
-        # Zapisz wykres 1 jako PNG
         plt.savefig(f'napiecie_na_kondensatorze_{interp_name}_{method}_{e_func.__name__}.png', dpi=300)
 
         # Wykres 2: Prąd i1(t) i i2(t) vs t
@@ -200,9 +201,18 @@ for e_func in e_funcs:
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
-
-        # Zapisz wykres 2 jako PNG
         plt.savefig(f'prady_i1_i_i2_{interp_name}_{method}_{e_func.__name__}.png', dpi=300)
 
-        # Pokaż wykresy
+        # Wykres 3: Napięcie na rezystorze R2
+        plt.figure(figsize=(10, 6))
+        plt.plot(t, uR2, label='uR2(t) [V]', color='purple')
+        plt.xlabel('Czas [s]')
+        plt.ylabel('Napięcie na R2 [V]')
+        plt.title(f'Napięcie na rezystorze R2(t) vs t ({method}, e(t)={e_func.__name__})')
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(f'napiecie_na_R2_{interp_name}_{method}_{e_func.__name__}.png', dpi=300)
+
         plt.show()
+
